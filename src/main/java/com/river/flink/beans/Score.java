@@ -16,4 +16,6 @@ public class Score {
     private String item;
 
     private Integer score;
+
+    private String tag;
 }
