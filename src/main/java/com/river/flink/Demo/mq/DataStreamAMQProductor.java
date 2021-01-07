@@ -57,16 +57,18 @@ public class DataStreamAMQProductor {
             public void run(SourceContext<Score> sourceContext) throws Exception {
                 Random random = new Random();
                 AtomicInteger atomicInteger = new AtomicInteger(0);
-                names.stream().forEach(name -> {
-                    items.stream().forEach(item -> {
-                        try {
-                            sleep(1000);
-                        } catch (InterruptedException e) {
+                while (true){
+                    names.stream().forEach(name -> {
+                        items.stream().forEach(item -> {
+                            try {
+                                sleep(1000);
+                            } catch (InterruptedException e) {
 
-                        }
-                        sourceContext.collect(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100)));
+                            }
+                            sourceContext.collect(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "mq"));
+                        });
                     });
-                });
+                }
             }
 
             @Override

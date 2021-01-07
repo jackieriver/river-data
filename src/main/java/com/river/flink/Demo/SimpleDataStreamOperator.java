@@ -1,19 +1,36 @@
 package com.river.flink.Demo;
 
+import cn.hutool.json.JSONUtil;
 import com.river.flink.beans.Score;
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.typeutils.PojoField;
+import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.DataStreamSource;
-import org.apache.flink.streaming.api.datastream.KeyedStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
+import org.apache.flink.streaming.api.functions.co.CoFlatMapFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.streaming.connectors.activemq.AMQSource;
+import org.apache.flink.streaming.connectors.activemq.AMQSourceConfig;
+import org.apache.flink.streaming.connectors.activemq.internal.RunningChecker;
+import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static java.lang.Thread.sleep;
 
 public class SimpleDataStreamOperator {
 
@@ -36,6 +53,8 @@ public class SimpleDataStreamOperator {
 
         StreamExecutionEnvironment environment = StreamExecutionEnvironment.getExecutionEnvironment();
         environment.setParallelism(1);
+
+        //生产数据
         DataStream<Score> source = environment.addSource(new SourceFunction<Score>() {
 
 
@@ -45,7 +64,12 @@ public class SimpleDataStreamOperator {
                 AtomicInteger atomicInteger = new AtomicInteger(0);
                 names.stream().forEach(name -> {
                     items.stream().forEach(item -> {
-                        sourceContext.collect(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100)));
+                        try {
+                            sleep(1000);
+                        } catch (InterruptedException e) {
+
+                        }
+                        sourceContext.collectWithTimestamp(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "local"), System.currentTimeMillis());
                     });
                 });
             }
@@ -56,36 +80,51 @@ public class SimpleDataStreamOperator {
             }
         });
         source.print();
-        /*source = source.map(new MapFunction<Score, Score>() {
+        source.keyBy(new KeySelector<Score, String>() {
             @Override
-            public Score map(Score score) throws Exception {
-                //score.setScore(score.getScore() * 10);
-                return score;
+            public String getKey(Score value) throws Exception {
+                return value.getName();
             }
-        });*/
+        }).maxBy("score").print();
 
-        KeyedStream<Score, String> scoreStringKeyedStream = source.keyBy(new KeySelector<Score, String>() {
+        /*AMQSourceConfig amqSourceConfig = new AMQSourceConfig.AMQSourceConfigBuilder()
+                .setConnectionFactory(new ActiveMQConnectionFactory("admin", "admin", "tcp://mq.testgfxd.com:61616"))
+                .setDestinationName("dataStream")
+                .setDeserializationSchema(new SimpleStringSchema())
+                .setRunningChecker(new RunningChecker())
+                .build();
+        DataStream source_mq = environment.addSource(new AMQSource(amqSourceConfig));
+
+        source.connect(source_mq).flatMap(new CoFlatMapFunction<Score, String, Score>() {
+
             @Override
-            public String getKey(Score score) throws Exception {
-                return score.getName();
+            public void flatMap1(Score value, Collector<Score> out) throws Exception {
+                out.collect(value);
             }
-        });
-        //scoreStringKeyedStream.print();
-        /*scoreStringKeyedStream.reduce(new ReduceFunction<Score>() {
+
             @Override
-            public Score reduce(Score score, Score t1) throws Exception {
-                Score score1 = new Score();
-                score1.setScore(score.getScore() + t1.getScore());
-                score1.setName(score.getName());
-                score1.setItem("总分数");
-                return score1;
+            public void flatMap2(String value, Collector<Score> out) throws Exception {
+                out.collect(JSONUtil.toBean(value, Score.class));
             }
         }).print();*/
-        System.out.println("=============================================================================");
-        //scoreStringKeyedStream.max("score").print();
-        scoreStringKeyedStream.maxBy("score").print();
-        scoreStringKeyedStream.sum("score").print();
-
+/*
+        SingleOutputStreamOperator<Score> process = source.process(new ProcessFunction<Score, Score>() {
+            @Override
+            public void processElement(Score value, Context ctx, Collector<Score> out) throws Exception {
+                if (value.getName().equals("高倩")) {
+                    out.collect(value);
+                    System.out.println(ctx.timestamp());
+                }
+            }
+        });*/
+        /*process.print();
+        List<PojoField> fields = new ArrayList<>();
+        List<PojoField> collect =
+                Arrays.stream(Score.class.getFields()).map(field -> new PojoField(field, BasicTypeInfo.of(field.getDeclaringClass()))).collect(Collectors.toList());
+        fields.addAll(collect);
+        TypeInformation<Score> scoreTypeInformation = new PojoTypeInfo<Score>(Score.class, fields);
+        process.getSideOutput(new OutputTag<>("1", scoreTypeInformation)).print();
+*/
         environment.execute();
     }
 }

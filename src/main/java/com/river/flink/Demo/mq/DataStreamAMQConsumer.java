@@ -25,8 +25,11 @@ public class DataStreamAMQConsumer {
                 .setDeserializationSchema(new SimpleStringSchema())
                 .setRunningChecker(new RunningChecker())
                 .build();
+
         DataStream dataStream = environment.addSource(new AMQSource(amqSourceConfig));
+
         dataStream.print();
+
         environment.execute();
     }
 }
