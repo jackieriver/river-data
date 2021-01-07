@@ -67,7 +67,7 @@ public class DataStreamRMQProductor {
                             } catch (InterruptedException e) {
 
                             }
-                            sourceContext.collect(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "mq"));
+                            sourceContext.collectWithTimestamp(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "mq"), System.currentTimeMillis());
                         });
                     });
                 }
