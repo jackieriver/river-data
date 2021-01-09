@@ -1,34 +1,16 @@
 package com.river.flink.Demo;
 
-import cn.hutool.json.JSONUtil;
 import com.river.flink.beans.Score;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.typeutils.PojoField;
-import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.api.functions.co.CoFlatMapFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.streaming.connectors.activemq.AMQSource;
-import org.apache.flink.streaming.connectors.activemq.AMQSourceConfig;
-import org.apache.flink.streaming.connectors.activemq.internal.RunningChecker;
-import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
-import org.apache.flink.util.Collector;
-import org.apache.flink.util.OutputTag;
 
-import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static java.lang.Thread.sleep;
 
@@ -69,7 +51,7 @@ public class SimpleDataStreamOperator {
                         } catch (InterruptedException e) {
 
                         }
-                        sourceContext.collectWithTimestamp(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "local"), System.currentTimeMillis());
+                        sourceContext.collectWithTimestamp(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "local", LocalDateTime.now()), System.currentTimeMillis());
                     });
                 });
             }

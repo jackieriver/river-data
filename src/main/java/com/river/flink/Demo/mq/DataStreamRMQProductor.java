@@ -16,6 +16,7 @@ import org.apache.flink.streaming.connectors.rabbitmq.RMQSink;
 import org.apache.flink.streaming.connectors.rabbitmq.common.RMQConnectionConfig;
 
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -67,7 +68,7 @@ public class DataStreamRMQProductor {
                             } catch (InterruptedException e) {
 
                             }
-                            sourceContext.collectWithTimestamp(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "mq"), System.currentTimeMillis());
+                            sourceContext.collectWithTimestamp(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "mq", LocalDateTime.now()), System.currentTimeMillis());
                         });
                     });
                 }

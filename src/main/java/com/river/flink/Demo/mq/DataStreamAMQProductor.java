@@ -14,6 +14,7 @@ import org.apache.flink.streaming.connectors.activemq.*;
 import org.apache.flink.streaming.connectors.activemq.internal.RunningChecker;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -65,7 +66,7 @@ public class DataStreamAMQProductor {
                             } catch (InterruptedException e) {
 
                             }
-                            sourceContext.collect(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "mq"));
+                            sourceContext.collect(new Score(atomicInteger.incrementAndGet(), name, item, random.nextInt(100), "mq", LocalDateTime.now()));
                         });
                     });
                 }
